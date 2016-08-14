@@ -1,7 +1,10 @@
-require(foreign)
+require(lift)
 require(nnet)
 require(ggplot2)
 require(reshape2)
+wants <- c("mlogit", "nnet", "VGAM","nnet","caret")
+has   <- wants %in% rownames(installed.packages())
+if(any(!has)) install.packages(wants[!has])
 #load data
 d2=read.table("student-por.csv",sep=";",header=TRUE)
 #explore column names
@@ -10,32 +13,31 @@ names (d2)
 str(d2)
 summary(d2)
 head(d2, 10)
+d2$goout=factor(d2$goout)
+d2$Dalc=factor(d2$Dalc)
+d2$Walc=factor(d2$Walc)
+d2$health=factor(d2$health)
+
+
 table(d2$Dalc) #weekday alcohol consumption 1-5 score
 table(d2$Walc) #weekend alcohol consumption 1-5 score
-#create linear prediction model weekday alcohol consumption
-model.days = lm(Dalc~ sex+ age+famsize+ activities+ higher +
-              +famrel + freetime, data = d2)
-summary (model.days)
-SSE1 = sum(model.days$residuals^2)
-SSE1
-#create linear prediction model weekends alcohol consumption
-model.weekend = lm(Walc~ sex+ age+famsize+ activities+ higher +
-              +famrel + freetime, data = d2)
 
 
-model2 = lm(Dalc~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
-                +famrel + freetime+goout, data = d2)
-summary (model1)
-summary (model2)
-SSE2 = sum(model1$residuals^2)
-SSE2
-SSE3 = sum(model2$residuals^2)
-SSE4
 
 library("nnet")
+library("caTools")
 #create multinomial prediction model weekends alcohol consumption
-test = multinom(Walc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
-                 +famrel + freetime+goout, data = d2)
+sample.d2 = sample.split(d2 [,28], SplitRatio=.8,group = NULL )
+trainIdx = which(sample.d2 == TRUE)
+trainData = d2[trainIdx,]
+testIdx = which(sample.d2 == FALSE)
+testData = d2[testIdx,]
+
+
+
+test = multinom(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
+                 +famrel + freetime+goout, data = trainData)
+
 summary(test)
 #calculate Z score and p-Value for the variables in the model
 z <- summary(test)$coefficients/summary(test)$standard.errors
@@ -45,27 +47,25 @@ p
 exp(coef(test))
 
 names (d2)
-test <- multinom(Dalc ~ ., data = d2)
+test1 <- multinom(Walc ~ ., data = trainData)
 
 head(fitted(test))
 #predicting 
-predicted=predict(test,type="probs")
-head(predicted)
-bpp=cbind(d2, predicted)
-names (bpp)
-by(bpp[,34:38], bpp$Walc, colMeans)
-#melting data for unique id variable combination
-bpp2 = melt (bpp,id.vars=c(names (d2)),value.name="probablity")
+predicted1=predict(test1,testData)
+predicted2=predict(test1,testData,"probs")
+head(predicted1)
+head(predicted2)
+#Confusion Matrix  
+confusionMatrix=table(predicted1, testData$Walc)
+confusionMatrix
+#Misclassification Error
+print(mean(as.character(predicted1) != as.character(testData$Walc)))
 
-head(bpp2)
- library(ggplot2)
-#ggplot does not work?????
-ggplot(bpp2, aes(x = write, y = probablity, colour = Walc)) + facet_grid(variable ~ ., scales="free")
+#probably too high. May be it can be improved by improving the model
+#terms or may be the variables are not as good in explaining the 
+#contraceptive method used. Either ways, I would encourage the investigator 
+#to try other ML approaches as well for this problem.
 
-#create logical prediction model weekends alcohol consumption
-library(caTools)
-set.seed(123)
-
-sample.d2 = sample.split (d2 [,28], SplitRatio=.8,group = NULL )
-sample.d2 #doesn`t take sample(still 649, not 80%)
-
+plot(confusionMatrix, values = 60, auto.key = list(columns = 5,
+                                            lines = TRUE,
+                                            points = FALSE))
