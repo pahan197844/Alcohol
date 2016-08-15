@@ -61,10 +61,7 @@ confusionMatrix
 #Misclassification Error
 print(mean(as.character(predicted1) != as.character(testData$Walc)))
 
-#probably too high. May be it can be improved by improving the model
-#terms or may be the variables are not as good in explaining the 
-#contraceptive method used. Either ways, I would encourage the investigator 
-#to try other ML approaches as well for this problem.
+#probably too high?
 
 plot(confusionMatrix, values = 60, auto.key = list(columns = 5,
                                             lines = TRUE,
