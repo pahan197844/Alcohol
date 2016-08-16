@@ -1,10 +1,8 @@
-require(lift)
-require(nnet)
-require(ggplot2)
-require(reshape2)
-wants <- c("mlogit", "nnet", "VGAM","nnet","caret")
+
+wants <- c("mlogit", "nnet", "VGAM","nnet","caret","lift","nnet","ggplot2","reshape2","caTools","mlbench")
 has   <- wants %in% rownames(installed.packages())
 if(any(!has)) install.packages(wants[!has])
+
 #load data
 d2=read.table("student-por.csv",sep=";",header=TRUE)
 #explore column names
@@ -13,19 +11,35 @@ names (d2)
 str(d2)
 summary(d2)
 head(d2, 10)
-d2$goout=factor(d2$goout)
-d2$Dalc=factor(d2$Dalc)
-d2$Walc=factor(d2$Walc)
-d2$health=factor(d2$health)
+contr.treatment(2)
+contr.treatment(3)
+contr.treatment(4)
+contr.treatment(5)
+contrasts(d2$Mjob) = contr.treatment(5)
+contrasts(d2$Fjob) = contr.treatment(5)
+contrasts(d2$famsize) = contr.treatment(2)
+contrasts(d2$Pstatus) = contr.treatment(2)
+
+contrasts(d2$reason) = contr.treatment(4)
+contrasts(d2$guardian) = contr.treatment(3)
+contrasts(d2$romantic) = contr.treatment(2)
 
 
 table(d2$Dalc) #weekday alcohol consumption 1-5 score
 table(d2$Walc) #weekend alcohol consumption 1-5 score
 
+plot(density(d2$Dalc))  
+plot(density(d2$Walc))  
+plot(density(d2$health))  
+plot(density(d2$absences))  
+plot(density(d2$G1))  
+plot(density(d2$G2))  
+plot(density(d2$G3))  
 
 
-library("nnet")
-library("caTools")
+#the regression
+summary(lm(Walc ~ ., d2))
+
 #create multinomial prediction model weekends alcohol consumption
 sample.d2 = sample.split(d2 [,28], SplitRatio=.8,group = NULL )
 trainIdx = which(sample.d2 == TRUE)
@@ -35,9 +49,9 @@ testData = d2[testIdx,]
 
 
 
-test = multinom(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
+test = svm(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
                  +famrel + freetime+goout, data = trainData)
-
+SVM 
 summary(test)
 #calculate Z score and p-Value for the variables in the model
 z <- summary(test)$coefficients/summary(test)$standard.errors
@@ -61,8 +75,8 @@ confusionMatrix
 #Misclassification Error
 print(mean(as.character(predicted1) != as.character(testData$Walc)))
 
-#probably too high?
 
 plot(confusionMatrix, values = 60, auto.key = list(columns = 5,
                                             lines = TRUE,
                                             points = FALSE))
+#probably too high?
