@@ -14,21 +14,19 @@ library(mgcv)
 byname=subset(df,select=name)
 unique=uniquecombs(byname)
 
-plot(unique)
 uniqueIndex<-attr(unique,"index")
-d3=df[df-uniqueIndex,]
+d3=df[uniqueIndex,]
 
-uniquecombs(d3)
-str(d3)
-contr.treatment(2)
-contr.treatment(3)
-contr.treatment(4)
-contr.treatment(5)
+library(dplyr)
+
+d3<-mutate(d3,ALc.total = (d3$Walc*2+d3$Dalc*5)/7) 
+ summary(d3$ALc.total)
+
+
 contrasts(d3$Mjob) = contr.treatment(5)
 contrasts(d3$Fjob) = contr.treatment(5)
 contrasts(d3$famsize) = contr.treatment(2)
 contrasts(d3$Pstatus) = contr.treatment(2)
-
 contrasts(d3$reason) = contr.treatment(4)
 contrasts(d3$guardian) = contr.treatment(3)
 contrasts(d3$romantic) = contr.treatment(2)
@@ -39,15 +37,5 @@ library(caret)
 
 
 
-
-
-p1 <- ggplot(d3,aes(log(absences),fill=factor(Dalc),colour=factor(Dalc)))+
-  geom_density(alpha = 0.1)
-p1
-p2 <- ggplot(d3,aes(log(goout),fill=factor(Dalc),colour=factor(Dalc)))+
-  geom_density(alpha = 0.1)
-p2
-p3 <- ggplot(d3,aes(log(health),fill=factor(Dalc),colour=factor(Dalc)))+
-  geom_density(alpha = 0.1)
-p3
+library(ggplot2) 
 
