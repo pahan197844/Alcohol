@@ -21,7 +21,7 @@ byname=subset(df,select=name)
 unique=uniquecombs(byname)
 
 uniqueIndex<-attr(unique,"index")
-d3=df[uniqueIndex,]
+d3=df[uniqueI ndex,]
 
 library(dplyr)
 
@@ -62,20 +62,45 @@ contrasts(d3$romantic) = contr.treatment(2)
 
 #the regression
 linear<-lm(Alc.total ~ ., d3)
+summary(linear)
 predict.lm<-predict(linear,d3)
-library(e1071)
+summary(predict.lm)
+library(ggplot2)
+#visualisation the most significant relationships
+ggplot(d3, aes(x = sex, y = Alc.total,y ~ x)) +
+  geom_jitter(alpha = 0.2)+
+  geom_point()+geom_smooth(method = "lm")
+ggplot(d3, aes(x = age, y = Alc.total,y ~ x)) +
+  geom_jitter(alpha = 0.2)+
+  geom_point()+geom_smooth(method = "lm")
+ggplot(d3, aes(x = Pstatus, y = Alc.total,y ~ x)) +
+  geom_jitter(alpha = 0.2)+
+  geom_point()+geom_smooth(method = "lm")
+ggplot(d3, aes(x = Fjob, y = Alc.total,y ~ x)) +
+  geom_jitter(alpha = 0.2)+
+  geom_point()+geom_smooth(method = "lm")
+ggplot(d3, aes(x = schoolsup, y = Alc.total,y ~ x)) +
+  geom_jitter(alpha = 0.2)+
+  geom_point()+geom_smooth(method = "lm")
+ggplot(d3, aes(x = activities, y = Alc.total,y ~ x)) +
+  geom_jitter(alpha = 0.2)+
+  geom_point()+geom_smooth(method = "lm")
+ggplot(d3, aes(x = goout, y = Alc.total,y ~ x)) +
+  geom_jitter(alpha = 0.2)+
+  geom_point()+geom_smooth(method = "lm")
 
-model.svm <- svm(Alc.total ~ ., d3,method="svmradial")
-summary(model.svm)
-predict.svm <- predict(model.svm, d3)
+library(e1071) 
 
-points(d3, predict.svm, col = "red", pch=4)
+model.svm <- svm(Alc.total ~sex+activities+age+Pstatus+Fjob+schoolsup+activities+goout, d3,kernel ="radial") 
+str(model.svm) 
+predict.svm <- predict(model.svm, d3) 
+str(predict.svm)
 
 
-
+plot(predict.svm,d3$Alc.total)
 
 #Splitting into training and testing sets.
-library(caTools)
+library(caTools) 
 sample.d3 = sample.split(d3[,34], SplitRatio=.8,group = NULL )
 trainIdx = which(sample.d3 == TRUE)
 trainData = d3[trainIdx,]
@@ -92,7 +117,7 @@ train.glm<- glm(Alc.total~ ., data=trainData)
 summary(train.glm)
 
 
-points(d3$Alc.total, predicted1, col = "blue", pch=4)
+
 
 #predicting 
 predicted1=predict(train.glm,testData)
