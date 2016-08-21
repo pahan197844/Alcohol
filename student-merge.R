@@ -1,5 +1,5 @@
 
-wants <- c("mlogit", "nnet", "VGAM","nnet","caret","lift","nnet","ggplot2","reshape2","caTools","mlbench")
+wants <- c("mlogit", "nnet", "VGAM","nnet","rpart.plot","caret","lift","nnet","ggplot2","reshape2","caTools","mlbench")
 has   <- wants %in% rownames(installed.packages())
 if(any(!has)) install.packages(wants[!has])
 
@@ -21,13 +21,13 @@ byname=subset(df,select=name)
 unique=uniquecombs(byname)
 
 uniqueIndex<-attr(unique,"index")
-d3=df[uniqueI ndex,]
+d3=df[uniqueIndex,]
 
 library(dplyr)
 
 d3<-mutate(d3,Alc.total = (d3$Walc*2+d3$Dalc*5)/7) 
 summary(d3$Alc.total)
-
+str(d3)
 
 
 
@@ -89,19 +89,12 @@ ggplot(d3, aes(x = goout, y = Alc.total,y ~ x)) +
   geom_jitter(alpha = 0.2)+
   geom_point()+geom_smooth(method = "lm")
 
-library(e1071) 
-
-model.svm <- svm(Alc.total ~sex+activities+age+Pstatus+Fjob+schoolsup+activities+goout, d3,kernel ="radial") 
-str(model.svm) 
-predict.svm <- predict(model.svm, d3) 
-str(predict.svm)
 
 
-plot(predict.svm,d3$Alc.total)
 
 #Splitting into training and testing sets.
 library(caTools) 
-sample.d3 = sample.split(d3[,34], SplitRatio=.8,group = NULL )
+sample.d3 = sample.split(d3$Alc.total, SplitRatio=0.8,group = NULL )
 trainIdx = which(sample.d3 == TRUE)
 trainData = d3[trainIdx,]
 testIdx = which(sample.d3 == FALSE)
@@ -112,11 +105,9 @@ dim(trainData)
 dim(testData)
 #setting seed
 set.seed(123)
-#using the train function on the training set
+#using the train function on the training set logistic regression
 train.glm<- glm(Alc.total~ ., data=trainData)
 summary(train.glm)
-
-
 
 
 #predicting 
@@ -136,4 +127,15 @@ print(mean(as.character(predicted1) != as.character(testData$Alc.total)))
 plot(confusionMatrix, values = 60, auto.key = list(columns = 5,
                                             lines = TRUE,
                                             points = FALSE))
-
+#CATR
+library(e1071) 
+library(rpart) 
+library(rpart.plot) 
+d3$G3=as.factor(d3$G3)
+sample.d31 = sample.split(d3$G3, SplitRatio=0.8,group = NULL )
+trainIdx1 = which(sample.d31 == TRUE)
+trainData1 = d3[trainIdx1,]
+testIdx1 = which(sample.d31 == FALSE)
+testData1 = d3[testIdx1,]
+treeG3<-rpart(factor(G3)~sex+age+Pstatus+Fjob+schoolsup+activities+goout+Alc.total,data=trainData1,method="class")
+prp(treeG3)
