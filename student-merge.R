@@ -34,7 +34,34 @@ str(d3)
 table(d2$Dalc) #weekday alcohol consumption 1-5 score
 table(d2$Walc) #weekend alcohol consumption 1-5 score
 
-plot(density(d3$Dalc))  
+
+mytheme2=theme(panel.grid.major = element_line(colour = "white")) + theme(panel.border = 
+                                                                           element_rect(linetype = "solid", colour = "white"))
+mytheme1=theme_bw(base_size = 12, base_family = "")
+
+ggplot (aes(x = Alc.total,fill=sex),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(sex~.,scale="free") +mytheme1+mytheme2
+
+ggplot (aes(x = Alc.total,fill=age),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(age~.,scale="free") +mytheme1+mytheme2
+
+ggplot (aes(x = Alc.total,fill=Pstatus),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(Pstatus~.,scale="free") +mytheme1+mytheme2
+
+ggplot (aes(x = Alc.total,fill=Fjob),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(Fjob~.,scale="free") +mytheme1+mytheme2
+
+ggplot (aes(x = Alc.total,fill=schoolsup),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(schoolsup~.,scale="free") +mytheme1+mytheme2
+
+ggplot (aes(x = Alc.total,fill=activities),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(activities~.,scale="free") +mytheme1+mytheme2
+
+ggplot (aes(x = Alc.total,fill=goout),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(goout~.,scale="free") +mytheme1+mytheme2
+
+
+
 plot(density(d3$Walc))  
 plot(density(d3$health))  
 plot(density(d3$absences))  
@@ -103,7 +130,19 @@ testData = d3[testIdx,]
 #Display of distributed data
 dim(trainData)
 dim(testData)
-#setting seed
+##Train VD model for train data
+library(caret)
+library(e1071) 
+train_svm<-svm(Walc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
+               +famrel + freetime+goout, data = trainData,type= "C", kernel="radial", cost=900,
+               gamma = 20,probability=TRUE)
+train_p<-predict(train_svm,trainData,probability=TRUE)
+cm<-confusionMatrix(train_p,trainData[,28])
+
+plot(train_p,testData[,29])
+
+
+#Logistic regression
 set.seed(123)
 #using the train function on the training set logistic regression
 train.glm<- glm(Alc.total~ ., data=trainData)
@@ -128,7 +167,7 @@ plot(confusionMatrix, values = 60, auto.key = list(columns = 5,
                                             lines = TRUE,
                                             points = FALSE))
 #CATR
-library(e1071) 
+
 library(rpart) 
 library(rpart.plot) 
 d3$G3=as.factor(d3$G3)
