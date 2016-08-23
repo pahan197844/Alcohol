@@ -1,5 +1,5 @@
 
-wants <- c("mlogit", "nnet", "VGAM","nnet","rpart.plot","caret","lift","nnet","ggplot2","reshape2","caTools","mlbench")
+wants <- c("mlogit", "ROCR","nnet", "VGAM","nnet","rpart.plot","caret","lift","nnet","ggplot2","reshape2","caTools","mlbench")
 has   <- wants %in% rownames(installed.packages())
 if(any(!has)) install.packages(wants[!has])
 
@@ -90,6 +90,14 @@ contrasts(d3$romantic) = contr.treatment(2)
 #the regression
 linear<-lm(Alc.total ~ ., d3)
 summary(linear)
+#RMSE linear
+rmse <- function(error)
+{
+  sqrt(mean(error^2))
+}
+
+error <- linear$residuals  # same as data$Y - predictedY
+predictionRMSE <- rmse(error)   # 2.312008e-15
 predict.lm<-predict(linear,d3)
 summary(predict.lm)
 library(ggplot2)
@@ -133,14 +141,28 @@ dim(testData)
 ##Train VD model for train data
 library(caret)
 library(e1071) 
-train_svm<-svm(Walc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
-               +famrel + freetime+goout, data = trainData,type= "C", kernel="radial", cost=900,
+train_svm<-svm(G3 ~Alc.total, data = trainData,type= "C", kernel="radial", cost=900,
                gamma = 20,probability=TRUE)
+
+#RMSE SMV
+errorSVM <- trainData$G3-train_p
+svrPredictionRMSE <- rmse(error)  # 3.157061
 train_p<-predict(train_svm,trainData,probability=TRUE)
-cm<-confusionMatrix(train_p,trainData[,28])
+cm<-confusionMatrix(train_p,trainData[,34])
+cm
+#gamma array
+Gamma = c(0.05, 1, 5, 10 ,15,20 ,25 ,30 ,35 ,40 ,45, 50, 55 ,60 ,65)
+##sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
+#+famrel + freetime+goout
+plot(train_p,d3[,34])
 
-plot(train_p,testData[,29])
 
+#tune up SVM model 
+tuneResult <- tune(svm, G3 ~ Alc.total, data = trainData,
+                   ranges = list(epsilon = seq(0,0.2,0.01), cost = 2^(2:9))
+) 
+print(tuneResult)
+plot(tuneResult)
 
 #Logistic regression
 set.seed(123)
