@@ -34,7 +34,7 @@ table(d2$Walc) #weekend alcohol consumption 1-5 score
 #storing my themes
 library(ggplot2)
 mytheme2=theme(panel.grid.major = element_line(colour = "white")) + theme(panel.border = 
-                                                                           element_rect(linetype = "solid", colour = "white"))
+                                                                            element_rect(linetype = "solid", colour = "white"))
 mytheme1=theme_bw(base_size = 12, base_family = "")
 
 ggplot (aes(x = Dalc,fill=sex),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
@@ -141,25 +141,61 @@ grid=expand.grid(cost=seq(1,900,100),gamma=seq(1,51,10))
 
 for(i in 1:nrow(grid)){ 
   trainModels[[i]]=svm(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
-                          +famrel + freetime+goout, data = trainData,type= "C", kernel="radial", cost=grid$cost[i],
-                          gamma = grid$gamma[i] ,probability=TRUE) 
-  }
+                       +famrel + freetime+goout, data = trainData,type= "C", kernel="radial", cost=grid$cost[i],
+                       gamma = grid$gamma[i] ,probability=TRUE) 
+}
 
-trainModels  #the best   cost:  801 ,gamma:  51 
+trainModels  #Will take 40 sec ,the best   cost:  801 ,gamma:  51 
 
 
 train_svmBest<-svm(Walc ~ ., data = trainData,type= "C", kernel="radial", cost=801,
-               gamma = 51,probability=TRUE) 
+                   gamma = 51,probability=TRUE) 
 train_p<-predict(train_svmBest,trainData,probability=TRUE) 
 
 cm<-confusionMatrix(train_p,trainData[,27]) 
 
 cm
- 
+
 train_svmBest_test=svm(Walc ~., data = testData,type= "C", kernel="radial", cost=801,
-                 gamma = 51,probability=TRUE) 
+                       gamma = 51,probability=TRUE) 
 train_p_test<-predict(train_svmBest_test,testData,probability=TRUE)
 
 cm_test<-confusionMatrix(train_p_test,testData[,27]) 
 
 cm_test
+
+#CART
+library(rpart) 
+library(rpart.plot) 
+library(e1071)
+library(caret)
+d3$G3=as.factor(d3$G3)
+sample.d31 = sample.split(d3$Dalc, SplitRatio=0.8,group = NULL )
+trainIdx1 = which(sample.d31 == TRUE)
+trainData1 = d3[trainIdx1,]
+testIdx1 = which(sample.d31 == FALSE)
+testData1 = d3[testIdx1,]
+treeDalc1<-rpart(Dalc~.,data=trainData1,method="poisson")
+treeDalc2<-rpart(Dalc~.,data=trainData1,method="class")
+treeDalc3<-rpart(Dalc~.,data=trainData1,method="exp")
+treeDalc4<-rpart(Dalc~.,data=trainData1,method="anova")
+prp(treeDalc1)
+prp(treeDalc2)
+prp(treeDalc3)
+prp(treeDalc4)
+
+
+train.contr=trainControl(method="cv",number=20)
+grid=expand.grid(.cp=(0:10)*0.001)
+
+training=train(Dalc~sex+Medu+Mjob+reason+traveltime+paid+higher+freetime,
+               data=trainData1,method="rpart", 
+               trControl=train.contr,tuneGrid=grid)
+
+best=training$finalModel
+prp(best)
+best.prediction= predict(best, data =testData1 )
+sum(best.prediction - trainData1$Dalc)^2
+
+
+
