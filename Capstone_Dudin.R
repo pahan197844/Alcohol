@@ -1,4 +1,4 @@
-## Code for capstone project:  PREDICTING SCHOOL STUDENT ALCOHOL CONSUMPTION AND OVERALL PERFORMANCE
+## Code for capstone project:  PREDICTING SCHOOL STUDENT DAYLY ALCOHOL CONSUMPTION AND OVERALL PERFORMANCE
 
 #installing packages
 
@@ -126,38 +126,40 @@ str(predicted.glm)
 
 #Confusion Matrix  
 confusionMatrix=table(predicted.glm, testData$Dalc)
-str(confusionMatrix)
+summary(confusionMatrix)
+
 
 
 #CVM regression
 library(caret)
 library(e1071) 
-train_svm<-svm(Walc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
-               +famrel + freetime+goout, data = trainData,type= "C", kernel="radial", cost=900,
-               gamma = 20,probability=TRUE)
-train_p<-predict(train_svm,trainData,probability=TRUE)
+
+
 
 trainModels=list()
-grid=expand.grid(cost=seq(0,900,100),gamma=seq(0,50,10))
-for(i in 1:row(grid)){ 
-  trainModelsSVM[[i]]=svm(Walc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
+grid=expand.grid(cost=seq(1,900,100),gamma=seq(1,51,10))
+
+for(i in 1:nrow(grid)){ 
+  trainModels[[i]]=svm(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
                           +famrel + freetime+goout, data = trainData,type= "C", kernel="radial", cost=grid$cost[i],
-                          gamma = grid$gamma[i] ,probability=TRUE)     
-   testPrediction[[i]]=predict(trainModels[[i]],testData)
-   }
+                          gamma = grid$gamma[i] ,probability=TRUE) 
+  }
+
+trainModels  #the best   cost:  801 ,gamma:  51 
 
 
-cm<-confusionMatrix(train_p,trainData[,28])
+train_svmBest<-svm(Walc ~ ., data = trainData,type= "C", kernel="radial", cost=801,
+               gamma = 51,probability=TRUE) 
+train_p<-predict(train_svmBest,trainData,probability=TRUE) 
 
+cm<-confusionMatrix(train_p,trainData[,27]) 
 
+cm
+ 
+train_svmBest_test=svm(Walc ~., data = testData,type= "C", kernel="radial", cost=801,
+                 gamma = 51,probability=TRUE) 
+train_p_test<-predict(train_svmBest_test,testData,probability=TRUE)
 
+cm_test<-confusionMatrix(train_p_test,testData[,27]) 
 
-
-
-
-
-
-
-
-
-
+cm_test
