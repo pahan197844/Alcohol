@@ -2,7 +2,7 @@
 
 #installing packages
 
-wants <- c("mlogit", "nnet", "VGAM","nnet","rpart.plot","caret","lift","nnet","ggplot2","reshape2","caTools","mlbench")
+wants <- c("mlogit","mgcv", "nnet","e1071" ,"VGAM","nnet","rpart.plot","caret","lift","nnet","ggplot2","reshape2","caTools","mlbench")
 has   <- wants %in% rownames(installed.packages())
 if(any(!has)) install.packages(wants[!has])
 
@@ -129,7 +129,25 @@ confusionMatrix=table(predicted.glm, testData$Dalc)
 str(confusionMatrix)
 
 
+#CVM regression
+library(caret)
+library(e1071) 
+train_svm<-svm(Walc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
+               +famrel + freetime+goout, data = trainData,type= "C", kernel="radial", cost=900,
+               gamma = 20,probability=TRUE)
+train_p<-predict(train_svm,trainData,probability=TRUE)
 
+trainModels=list()
+grid=expand.grid(cost=seq(0,900,100),gamma=seq(0,50,10))
+for(i in 1:row(grid)){ 
+  trainModelsSVM[[i]]=svm(Walc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
+                          +famrel + freetime+goout, data = trainData,type= "C", kernel="radial", cost=grid$cost[i],
+                          gamma = grid$gamma[i] ,probability=TRUE)     
+   testPrediction[[i]]=predict(trainModels[[i]],testData)
+   }
+
+
+cm<-confusionMatrix(train_p,trainData[,28])
 
 
 
