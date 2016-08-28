@@ -2,8 +2,8 @@
 
 #installing packages
 
-wants <- c("mlogit","mgcv", "nnet","e1071" ,"VGAM","nnet","rpart.plot",
-           "caret","lift","nnet","ggplot2","reshape2","caTools","mlbench")
+wants <- c("mlogit","mgcv", "nnet","e1071" ,"VGAM","nnet","rpart.plot","ROCR","randomForest",
+           "caret","lift","nnet","ggplot2","reshape2","caTools","mlbench","SDMTools","pROC")
 
 has   <- wants %in% rownames(installed.packages())
 
@@ -155,89 +155,118 @@ dim(testData)
 
 set.seed(123)
 
-#using the train function on the training set logistic regression
+#creating logistic regression the model 
 
-train.glm<- glm(Dalc~ ., data=trainData,family= gaussian)
+train.glm<- glm(Dalc~ ., data=d3,family= gaussian)
 
 summary(train.glm)
 
 plot(train.glm)
 
-#predicting 
+#predicting the 
 
-predicted.glm=predict(train.glm,testData,type="response")
+d3$G3<-as.factor(d3$G3)
+
+predicted.glm=predict(train.glm,type="response")
 
 head(predicted.glm)
 
-str(predicted.glm)
+summary(predicted.glm)
 
+tapply(predicted.glm,d3$Dalc,mean)
 
+table(d3$Dalc, predicted.glm >2) #with threshold 2
 
-#Confusion Matrix  for logistic regression
+#sensitivity=95%
+#specificity=83.8%
 
-confusionMatrix=table(predicted.glm, testData$Dalc)
-
-summary(confusionMatrix)
-
-#inproving logistic regression
 
 
 #CVM regression
+
 library(caret)
+
 library(e1071) 
 
 
-
 trainModels=list()
-grid=expand.grid(cost=seq(1,900,100),gamma=seq(1,51,10))
+
+#forming set of 60 different values of cost and gamma 
+#and applying to SVM to finding the best model
+
+grid=expand.grid(cost=seq(1,2000,300),gamma=seq(1,200,30))
 
 for(i in 1:nrow(grid)){ 
-  trainModels[[i]]=svm(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + studytime +failures+ schoolsup+ activities+ higher +romantic
-                       +famrel + freetime+goout, data = trainData,type= "C", kernel="radial", cost=grid$cost[i],
-                       gamma = grid$gamma[i] ,probability=TRUE) 
-}
+  trainModels[[i]]=svm(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
+                         studytime +failures+ schoolsup+ activities+ higher +romantic
+                       +famrel+freetime+goout, data = trainData,type= "C", kernel="radial",
+                       cost=grid$cost[i], gamma = grid$gamma[i] ,probability=TRUE)  }
 
-trainModels  #Will take 40 sec ,the best   cost:  801 ,gamma:  51 
+trainModels  #Will take 40 sec ,the best   cost:  901 ,gamma:  111 
+
+train_svmBest<-svm(Walc ~ ., data = trainData,type= "C", kernel="radial", cost=901,
+                   gamma = 111,probability=TRUE) 
 
 
-train_svmBest<-svm(Walc ~ ., data = trainData,type= "C", kernel="radial", cost=801,
-                   gamma = 51,probability=TRUE) 
-train_p<-predict(train_svmBest,trainData,probability=TRUE) 
+#predicting the test data
 
-cm<-confusionMatrix(train_p,trainData[,27]) 
+svmmodel.predict<-predict(train_svmBest,subset(testData,decision.values=TRUE))
 
-cm
+svmmodel.class<-predict(train_svmBest,testData,type="class")
 
-train_svmBest_test=svm(Walc ~., data = testData,type= "C", kernel="radial", cost=801,
-                       gamma = 51,probability=TRUE) 
-train_p_test<-predict(train_svmBest_test,testData,probability=TRUE)
+svmmodel.labels<-testData$Dalc
 
-cm_test<-confusionMatrix(train_p_test,testData[,27]) 
 
-cm_test
+#analyzing result
+
+library(SDMTools) 
+svmmodel.confusion<-confusionMatrix(svmmodel.labels,svmmodel.class)
+
+svmmodel.confusion
+
+
 
 #CART
+
 library(rpart) 
+
 library(rpart.plot) 
+
 library(e1071)
+
 library(caret)
+
+
 d3$G3=as.factor(d3$G3)
+
 sample.d31 = sample.split(d3$Dalc, SplitRatio=0.8,group = NULL )
+
 trainIdx1 = which(sample.d31 == TRUE)
+
 trainData1 = d3[trainIdx1,]
+
 testIdx1 = which(sample.d31 == FALSE)
+
 testData1 = d3[testIdx1,]
+
+
+
 treeDalc1<-rpart(Dalc~.,data=trainData1,method="poisson")
+
 treeDalc2<-rpart(Dalc~.,data=trainData1,method="class")
 
 treeDalc3<-rpart(Dalc~.,data=trainData1,method="anova")
+
 prp(treeDalc1)
+
 prp(treeDalc2)
+
 prp(treeDalc3)
 
 
 
 train.contr=trainControl(method="cv",number=20)
+
 grid=expand.grid(.cp=(0:10)*0.001)
 
 training=train(Dalc~sex+Medu+Mjob+reason+traveltime+paid+higher+freetime,
@@ -245,8 +274,11 @@ training=train(Dalc~sex+Medu+Mjob+reason+traveltime+paid+higher+freetime,
                trControl=train.contr,tuneGrid=grid)
 
 best=training$finalModel
+
 prp(best)
+
 best.prediction= predict(best, data =testData1 )
+
 sum(best.prediction - trainData1$Dalc)^2
 
 
