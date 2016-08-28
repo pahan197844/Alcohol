@@ -194,13 +194,13 @@ for(i in 1:nrow(grid)){
                        +famrel+freetime+goout, data = trainData,type= "C", kernel="radial",
                        cost=grid$cost[i], gamma = grid$gamma[i] ,probability=TRUE)  }
 
-trainModels  #Will take 40 sec ,the best   cost:  901 ,gamma:  181 
+summary(trainModels[5])#Will take 40 sec ,the best   cost:  901 ,gamma:  181 
 
 train_svmBest<-svm(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
                      studytime +failures+ schoolsup+ activities+ higher +romantic
                    +famrel+freetime+goout, data = trainData,type= "C", kernel="radial", cost=901,
                    gamma = 181,probability=TRUE) 
-
+str( trainModels[34])
 
 #predicting the test data
 
@@ -220,8 +220,17 @@ svmmodel.confusion<-confusionMatrix(svmmodel.labels,svmmodel.class)
 svmmodel.confusion #Accuracy : 0.8408
 
 
-#CART
+#SVM with cross validation in R using caret
 
+ctrl <- trainControl(method = "repeatedcv", repeats = 10)
+
+set.seed(1500)
+
+mod <- train(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
+               +                  studytime +failures+ schoolsup+ activities+ higher +romantic
+             +                 famrel+freetime+goout, data=trainData, method = "svmLinear", trControl = ctrl)
+
+mod
 library(rpart) 
 
 library(rpart.plot) 
