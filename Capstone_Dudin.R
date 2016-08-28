@@ -2,40 +2,72 @@
 
 #installing packages
 
-wants <- c("mlogit","mgcv", "nnet","e1071" ,"VGAM","nnet","rpart.plot","caret","lift","nnet","ggplot2","reshape2","caTools","mlbench")
+wants <- c("mlogit","mgcv", "nnet","e1071" ,"VGAM","nnet","rpart.plot",
+           "caret","lift","nnet","ggplot2","reshape2","caTools","mlbench")
+
 has   <- wants %in% rownames(installed.packages())
+
 if(any(!has)) install.packages(wants[!has])
 
 #loading data
+
 setwd("C:/Users/111/Desktop/Alcohol-master")
+
 d1=read.table("student-mat.csv",sep=";",header=TRUE)
 d2=read.table("student-por.csv",sep=";",header=TRUE)
+
 #there are severalstudents that belong to both datasets . 
 #These students can be identified by searching for identical attributes
 #that characterize each student.
 
+#binding datasets
 df=rbind(d1, d2) 
+
 str(df)
 
 #creating the list of the attributes to search by
-name=c("school","sex","age","address","famsize","Pstatus","Medu","Fedu","Mjob","Fjob","reason","nursery","internet")
+name=c("school","sex","age","address","famsize","Pstatus",
+       "Medu","Fedu","Mjob","Fjob","reason","nursery","internet")
 
 #creating the uniqe index using mgcv, and getting the final data set d3
+
 library(mgcv)
+
 byname=subset(df,select=name)
+
 unique=uniquecombs(byname)
+
 uniqueIndex<-attr(unique,"index")
+
 d3=df[uniqueIndex,]
 
 #visualizing and exploratory analysing
+
 table(d2$Dalc) #weekday alcohol consumption 1-5 score
 table(d2$Walc) #weekend alcohol consumption 1-5 score
 
 #storing my themes
 library(ggplot2)
-mytheme2=theme(panel.grid.major = element_line(colour = "white")) + theme(panel.border = 
-                                                                            element_rect(linetype = "solid", colour = "white"))
+
 mytheme1=theme_bw(base_size = 12, base_family = "")
+
+mytheme2=theme(panel.grid.major = element_line(colour = "white")) +
+  theme(panel.border = 
+   element_rect(linetype = "solid", colour = "white"))
+
+#plotting dependent variables
+
+plot(density(d3$health))  
+
+plot(density(d3$absences)) 
+
+plot(density(d3$G1))  
+
+plot(density(d3$G2))  
+
+plot(density(d3$G3)) 
+
+#plotting dependent variables
 
 ggplot (aes(x = Dalc,fill=sex),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
   facet_grid(sex~.,scale="free") +mytheme1+mytheme2
@@ -61,19 +93,19 @@ ggplot (aes(x = Dalc,fill=goout),data = d3) + geom_histogram(binwidth = 1,na.rm 
 ggplot (aes(x = G3,y=Dalc),data = d3) + geom_point()+geom_jitter(alpha = 0.2)
 
 
-plot(density(d3$Dalc))  
-plot(density(d3$health))  
-plot(density(d3$absences))  
-plot(density(d3$G1))  
-plot(density(d3$G2))  
-plot(density(d3$G3))  
+ 
 
-#linear regression model
+#building linear regression model
 linear<-lm(Dalc ~ ., d3)
+
 summary(linear)
+
 predict.lm<-predict(linear,d3)
+
 summary(predict.lm)
+
 plot(linear)
+
 #visualisation the most significant relationships
 ggplot(d3, aes(x = sex, y = Dalc,y ~ x)) +
   geom_jitter(alpha = 0.2)+
@@ -97,37 +129,57 @@ ggplot(d3, aes(x = goout, y = Dalc,y ~ x)) +
   geom_jitter(alpha = 0.2)+
   geom_point()+geom_smooth(method = "lm")
 
-#Splitting into training and testing sets.
+#preparing  training and testing sets for the future work
+
 library(caTools) 
+
 set.seed(76)
+
 sample.d3 = sample.split(d3$Dalc, SplitRatio=0.7,group = NULL )
+
 trainIdx = which(sample.d3 == TRUE)
+
 trainData = d3[trainIdx,]
+
 testIdx = which(sample.d3 == FALSE)
+
 testData = d3[testIdx,]
 
 #Display of distributed data
+
 dim(trainData)
+
 dim(testData)
 
 #Logistic regression
+
 set.seed(123)
+
 #using the train function on the training set logistic regression
-train.glm<- glm(Dalc~ ., data=trainData)
+
+train.glm<- glm(Dalc~ ., data=trainData,family= gaussian)
+
 summary(train.glm)
 
+plot(train.glm)
 
 #predicting 
-predicted.glm=predict(train.glm,testData)
+
+predicted.glm=predict(train.glm,testData,type="response")
+
 head(predicted.glm)
+
 str(predicted.glm)
 
 
 
-#Confusion Matrix  
+#Confusion Matrix  for logistic regression
+
 confusionMatrix=table(predicted.glm, testData$Dalc)
+
 summary(confusionMatrix)
 
+#inproving logistic regression
 
 
 #CVM regression
@@ -177,12 +229,12 @@ testIdx1 = which(sample.d31 == FALSE)
 testData1 = d3[testIdx1,]
 treeDalc1<-rpart(Dalc~.,data=trainData1,method="poisson")
 treeDalc2<-rpart(Dalc~.,data=trainData1,method="class")
-treeDalc3<-rpart(Dalc~.,data=trainData1,method="exp")
-treeDalc4<-rpart(Dalc~.,data=trainData1,method="anova")
+
+treeDalc3<-rpart(Dalc~.,data=trainData1,method="anova")
 prp(treeDalc1)
 prp(treeDalc2)
 prp(treeDalc3)
-prp(treeDalc4)
+
 
 
 train.contr=trainControl(method="cv",number=20)
