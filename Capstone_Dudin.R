@@ -220,6 +220,7 @@ svmmodel.confusion<-confusionMatrix(svmmodel.labels,svmmodel.class)
 svmmodel.confusion #Accuracy : 0.8408
 
 
+#CART
 
 library(rpart) 
 
