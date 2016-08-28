@@ -67,7 +67,7 @@ plot(density(d3$G2))
 
 plot(density(d3$G3)) 
 
-#plotting dependent variables
+#plotting independent variables
 
 ggplot (aes(x = Dalc,fill=sex),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
   facet_grid(sex~.,scale="free") +mytheme1+mytheme2
