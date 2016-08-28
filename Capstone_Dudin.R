@@ -25,21 +25,16 @@ df=rbind(d1, d2)
 
 str(df)
 
-#creating the list of the attributes to search by
-name=c("school","sex","age","address","famsize","Pstatus",
-       "Medu","Fedu","Mjob","Fjob","reason","nursery","internet")
 
 #creating the uniqe index using mgcv, and getting the final data set d3
 
 library(mgcv)
 
-byname=subset(df,select=name)
+unique=uniquecombs(df[1:13])
 
-unique=uniquecombs(byname)
+uniqueIndex<-attributes(unique)
 
-uniqueIndex<-attr(unique,"index")
-
-d3=df[uniqueIndex,]
+d3=df[uniqueIndex$row.names,]
 
 #visualizing and exploratory analysing
 
@@ -175,10 +170,7 @@ summary(predicted.glm)
 
 tapply(predicted.glm,d3$Dalc,mean)
 
-table(d3$Dalc, predicted.glm >2) #with threshold 2
-
-#sensitivity=95%
-#specificity=83.8%
+table(d3$Dalc, predicted.glm >2.5) #with threshold 2.5
 
 
 
@@ -194,7 +186,7 @@ trainModels=list()
 #forming set of 60 different values of cost and gamma 
 #and applying to SVM to finding the best model
 
-grid=expand.grid(cost=seq(1,2000,300),gamma=seq(1,200,30))
+grid=expand.grid(cost=seq(1,901,100),gamma=seq(1,200,30))
 
 for(i in 1:nrow(grid)){ 
   trainModels[[i]]=svm(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
@@ -202,10 +194,12 @@ for(i in 1:nrow(grid)){
                        +famrel+freetime+goout, data = trainData,type= "C", kernel="radial",
                        cost=grid$cost[i], gamma = grid$gamma[i] ,probability=TRUE)  }
 
-trainModels  #Will take 40 sec ,the best   cost:  901 ,gamma:  111 
+trainModels  #Will take 40 sec ,the best   cost:  901 ,gamma:  181 
 
-train_svmBest<-svm(Walc ~ ., data = trainData,type= "C", kernel="radial", cost=901,
-                   gamma = 111,probability=TRUE) 
+train_svmBest<-svm(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
+                     studytime +failures+ schoolsup+ activities+ higher +romantic
+                   +famrel+freetime+goout, data = trainData,type= "C", kernel="radial", cost=901,
+                   gamma = 181,probability=TRUE) 
 
 
 #predicting the test data
@@ -220,13 +214,12 @@ svmmodel.labels<-testData$Dalc
 #analyzing result
 
 library(SDMTools) 
+
 svmmodel.confusion<-confusionMatrix(svmmodel.labels,svmmodel.class)
 
-svmmodel.confusion
+svmmodel.confusion #Accuracy : 0.8408
 
 
-
-#CART
 
 library(rpart) 
 
@@ -237,25 +230,11 @@ library(e1071)
 library(caret)
 
 
-d3$G3=as.factor(d3$G3)
+treeDalc1<-rpart(Dalc~.,data=trainData,method="poisson")
 
-sample.d31 = sample.split(d3$Dalc, SplitRatio=0.8,group = NULL )
+treeDalc2<-rpart(Dalc~.,data=trainData,method="class")
 
-trainIdx1 = which(sample.d31 == TRUE)
-
-trainData1 = d3[trainIdx1,]
-
-testIdx1 = which(sample.d31 == FALSE)
-
-testData1 = d3[testIdx1,]
-
-
-
-treeDalc1<-rpart(Dalc~.,data=trainData1,method="poisson")
-
-treeDalc2<-rpart(Dalc~.,data=trainData1,method="class")
-
-treeDalc3<-rpart(Dalc~.,data=trainData1,method="anova")
+treeDalc3<-rpart(Dalc~.,data=trainData,method="anova")
 
 prp(treeDalc1)
 
@@ -270,16 +249,14 @@ train.contr=trainControl(method="cv",number=20)
 grid=expand.grid(.cp=(0:10)*0.001)
 
 training=train(Dalc~sex+Medu+Mjob+reason+traveltime+paid+higher+freetime,
-               data=trainData1,method="rpart", 
+               data=trainData,method="rpart", 
                trControl=train.contr,tuneGrid=grid)
 
 best=training$finalModel
 
 prp(best)
 
-best.prediction= predict(best, data =testData1 )
+best.prediction= predict(best, data =testData )
 
-sum(best.prediction - trainData1$Dalc)^2
-
-
+sum(best.prediction - trainData$Dalc)^2
 
