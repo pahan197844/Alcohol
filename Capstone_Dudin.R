@@ -189,18 +189,18 @@ trainModels=list()
 grid=expand.grid(cost=seq(1,901,100),gamma=seq(1,200,30))
 
 for(i in 1:nrow(grid)){ 
-  trainModels[[i]]=svm(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
+  trainModels[[i]]=svm(as.factor(Dalc) ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
                          studytime +failures+ schoolsup+ activities+ higher +romantic
                        +famrel+freetime+goout, data = trainData,type= "C", kernel="radial",
                        cost=grid$cost[i], gamma = grid$gamma[i] ,probability=TRUE)  }
 
 summary(trainModels[5])#Will take 40 sec ,the best   cost:  901 ,gamma:  181 
 
-train_svmBest<-svm(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
+train_svmBest<-svm(as.factor(Dalc) ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
                      studytime +failures+ schoolsup+ activities+ higher +romantic
                    +famrel+freetime+goout, data = trainData,type= "C", kernel="radial", cost=901,
                    gamma = 181,probability=TRUE) 
-str( trainModels[34])
+
 
 #predicting the test data
 
@@ -227,10 +227,13 @@ ctrl <- trainControl(method = "repeatedcv", repeats = 10)
 set.seed(1500)
 
 mod <- train(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
-               +                  studytime +failures+ schoolsup+ activities+ higher +romantic
+            +                  studytime +failures+ schoolsup+ activities+ higher +romantic
              +                 famrel+freetime+goout, data=trainData, method = "svmLinear", trControl = ctrl)
 
 mod
+
+
+#CART
 library(rpart) 
 
 library(rpart.plot) 
@@ -253,7 +256,7 @@ prp(treeDalc2)
 prp(treeDalc3)
 
 
-
+#tunung CART model
 train.contr=trainControl(method="cv",number=20)
 
 grid=expand.grid(.cp=(0:10)*0.001)
