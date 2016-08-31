@@ -1,4 +1,4 @@
-## Code for capstone project:  PREDICTING SCHOOL STUDENT DAYLY ALCOHOL CONSUMPTION AND OVERALL PERFORMANCE
+## Code for capstone project:  PREDICTING  STUDENT DAYLY ALCOHOL CONSUMPTION
 
 #installing packages
 
@@ -23,9 +23,6 @@ d2=read.table("student-por.csv",sep=";",header=TRUE)
 #binding datasets
 df=rbind(d1, d2) 
 
-str(df)
-
-
 #creating the uniqe index using mgcv, and getting the final data set d3
 
 library(mgcv)
@@ -37,6 +34,8 @@ uniqueIndex<-attributes(unique)
 d3=df[uniqueIndex$row.names,]
 
 #visualizing and exploratory analysing
+
+str(d3)
 
 table(d2$Dalc) #weekday alcohol consumption 1-5 score
 table(d2$Walc) #weekend alcohol consumption 1-5 score
@@ -56,11 +55,12 @@ plot(density(d3$health))
 
 plot(density(d3$absences)) 
 
-plot(density(d3$G1))  
+plot(density(d3$Dalc))  
 
-plot(density(d3$G2))  
+plot(density(d3$Walc))  
 
 plot(density(d3$G3)) 
+
 
 #plotting independent variables
 
@@ -70,22 +70,22 @@ ggplot (aes(x = Dalc,fill=sex),data = d3) + geom_histogram(binwidth = 1,na.rm = 
 ggplot (aes(x = Dalc,fill=age),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
   facet_grid(age~.,scale="free") +mytheme1+mytheme2
 
-ggplot (aes(x = Dalc,fill=Pstatus),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
-  facet_grid(Pstatus~.,scale="free") +mytheme1+mytheme2
+ggplot (aes(x = Dalc,fill=Medu),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(Medu~.,scale="free") +mytheme1+mytheme2
+
+ggplot (aes(x = Dalc,fill=Mjob),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(Mjob~.,scale="free") +mytheme1+mytheme2
+
+ggplot (aes(x = Dalc,fill=Fedu),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(Fedu~.,scale="free") +mytheme1+mytheme2
 
 ggplot (aes(x = Dalc,fill=Fjob),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
   facet_grid(Fjob~.,scale="free") +mytheme1+mytheme2
 
-ggplot (aes(x = Dalc,fill=schoolsup),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
-  facet_grid(schoolsup~.,scale="free") +mytheme1+mytheme2
+ggplot (aes(x = Dalc,fill=freetime          ),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
+  facet_grid(freetime          ~.,scale="free") +mytheme1+mytheme2
 
-ggplot (aes(x = Dalc,fill=activities),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
-  facet_grid(activities~.,scale="free") +mytheme1+mytheme2
-
-ggplot (aes(x = Dalc,fill=goout),data = d3) + geom_histogram(binwidth = 1,na.rm = T) + 
-  facet_grid(goout~.,scale="free") +mytheme1+mytheme2
-
-ggplot (aes(x = G3,y=Dalc),data = d3) + geom_point()+geom_jitter(alpha = 0.2)
+ggplot (aes(x = Walc,y=Dalc),data = d3) + geom_point()+geom_jitter(alpha = 0.2)
 
 
  
@@ -101,28 +101,7 @@ summary(predict.lm)
 
 plot(linear)
 
-#visualisation the most significant relationships
-ggplot(d3, aes(x = sex, y = Dalc,y ~ x)) +
-  geom_jitter(alpha = 0.2)+
-  geom_point()+geom_smooth(method = "lm")
-ggplot(d3, aes(x = age, y = Dalc,y ~ x)) +
-  geom_jitter(alpha = 0.2)+
-  geom_point()+geom_smooth(method = "lm")
-ggplot(d3, aes(x = Pstatus, y = Dalc,y ~ x)) +
-  geom_jitter(alpha = 0.2)+
-  geom_point()+geom_smooth(method = "lm")
-ggplot(d3, aes(x = Fjob, y = Dalc,y ~ x)) +
-  geom_jitter(alpha = 0.2)+
-  geom_point()+geom_smooth(method = "lm")
-ggplot(d3, aes(x = schoolsup, y = Dalc,y ~ x)) +
-  geom_jitter(alpha = 0.2)+
-  geom_point()+geom_smooth(method = "lm")
-ggplot(d3, aes(x = activities, y = Dalc,y ~ x)) +
-  geom_jitter(alpha = 0.2)+
-  geom_point()+geom_smooth(method = "lm")
-ggplot(d3, aes(x = goout, y = Dalc,y ~ x)) +
-  geom_jitter(alpha = 0.2)+
-  geom_point()+geom_smooth(method = "lm")
+
 
 #preparing  training and testing sets for the future work
 
@@ -150,7 +129,7 @@ dim(testData)
 
 set.seed(123)
 
-#creating logistic regression the model 
+#creating logistic regression model 
 
 train.glm<- glm(Dalc~ ., data=d3,family= gaussian)
 
@@ -172,6 +151,34 @@ tapply(predicted.glm,d3$Dalc,mean)
 
 table(d3$Dalc, predicted.glm >2.5) #with threshold 2.5
 
+#multinomial regression
+
+require(foreign)
+require(nnet)
+require(ggplot2)
+require(reshape2)
+
+mult.regression <-  multinom(Dalc ~ . , data = trainData)
+
+summary(mult.regression)
+
+z <- summary(mult.regression)$coefficients/summary(mult.regression)$standard.errors
+
+p <- (1 - pnorm(abs(z), 0, 1))*2
+
+p
+
+predict.test.multinom<-predict(mult.regression,newdata = testData)
+
+predict.test.multinom.prob<- predict(mult.regression, newdata = testData, "probs")
+
+summary(predict.train.multinom.prob)
+
+table(testData$Dalc,predict.test.multinom)
+
+mean(as.character(predict.test.multinom) != as.character(testData$Dalc)) #misclassification erreor  27.3% low
+
+ggplot(testData, aes(x=testData$Dalc, y=predict.test.multinom)) + geom_point(aes(colour=Dalc))+geom_jitter(alpha = 0.2)
 
 
 #CVM regression
