@@ -201,7 +201,7 @@ for(i in 1:nrow(grid)){
                        +famrel+freetime+goout, data = trainData,type= "C", kernel="radial",
                        cost=grid$cost[i], gamma = grid$gamma[i] ,probability=TRUE)  }
 
-summary(trainModels[5])#Will take 40 sec ,the best   cost:  901 ,gamma:  181 
+summary(trainModels[5])#Will take 40 sec  
 
 train_svmBest<-svm(as.factor(Dalc) ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
                      studytime +failures+ schoolsup+ activities+ higher +romantic
