@@ -188,21 +188,6 @@ library(caret)
 library(e1071) 
 
 
-trainModels=list()
-
-#forming set of 60 different values of cost and gamma 
-#and applying to SVM to finding the best model
-
-grid=expand.grid(cost=seq(1,901,100),gamma=seq(1,200,30))
-
-for(i in 1:nrow(grid)){ 
-  trainModels[[i]]=svm(as.factor(Dalc) ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
-                         studytime +failures+ schoolsup+ activities+ higher +romantic
-                       +famrel+freetime+goout, data = trainData,type= "C", kernel="radial",
-                       cost=grid$cost[i], gamma = grid$gamma[i] ,probability=TRUE)  }
-
-summary(trainModels[5])#Will take 40 sec  
-
 train_svmBest<-svm(as.factor(Dalc) ~ sex+ age+famsize+Pstatus+ Medu+Fedu + 
                      studytime +failures+ schoolsup+ activities+ higher +romantic
                    +famrel+freetime+goout, data = trainData,type= "C", kernel="radial", cost=901,
@@ -239,44 +224,4 @@ mod <- train(Dalc ~ sex+ age+famsize+Pstatus+ Medu+Fedu +
 
 mod
 
-
-#CART
-library(rpart) 
-
-library(rpart.plot) 
-
-library(e1071)
-
-library(caret)
-
-
-treeDalc1<-rpart(Dalc~.,data=trainData,method="poisson")
-
-treeDalc2<-rpart(Dalc~.,data=trainData,method="class")
-
-treeDalc3<-rpart(Dalc~.,data=trainData,method="anova")
-
-prp(treeDalc1)
-
-prp(treeDalc2)
-
-prp(treeDalc3)
-
-
-#tunung CART model
-train.contr=trainControl(method="cv",number=20)
-
-grid=expand.grid(.cp=(0:10)*0.001)
-
-training=train(Dalc~sex+Medu+Mjob+reason+traveltime+paid+higher+freetime,
-               data=trainData,method="rpart", 
-               trControl=train.contr,tuneGrid=grid)
-
-best=training$finalModel
-
-prp(best)
-
-best.prediction= predict(best, data =testData )
-
-sum(best.prediction - trainData$Dalc)^2
 
